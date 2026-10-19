@@ -35,7 +35,7 @@
     button:focus-visible, a:focus-visible { outline: 3px solid #70d8ce; outline-offset: 2px; }
 
     .app {
-      --forecast-follow-top: calc(max(14px, env(safe-area-inset-top)) + 145px);
+      --map-toolbar-top: calc(max(14px, env(safe-area-inset-top)) + 123px);
       position: relative;
       width: 100%;
       height: 100svh;
@@ -73,11 +73,11 @@
     }
 
     .brand,
-    .top-actions,
     .forecast-strip,
+    .view-controls,
+    .weather-tools,
     .legend,
     .layer-switch,
-    .map-action,
     .summary-card { pointer-events: auto; }
 
     .brand {
@@ -171,7 +171,7 @@
 
     .day-button {
       min-width: 74px;
-      padding: 7px 5px 6px;
+      padding: 7px 5px;
       border: 0;
       border-radius: 13px;
       background: transparent;
@@ -181,45 +181,24 @@
     .day-button[aria-selected="true"] { color: #fff; background: var(--navy); }
     .day-button strong { display: block; font-size: 12px; line-height: 1.2; }
     .day-button span { display: block; margin-top: 3px; font: 600 10px/1.2 "DM Sans", sans-serif; opacity: .65; }
-    .day-button small {
-      display: inline-block;
-      margin-top: 4px;
-      padding: 2px 5px;
-      border-radius: 99px;
-      color: #587282;
-      background: #e7f0f1;
-      font-size: 8px;
-      font-weight: 700;
-    }
-    .day-button[aria-selected="true"] small { color: #082235; background: #f0c95f; }
 
-    .advisory {
+    .map-toolbar {
       position: absolute;
       z-index: 500;
-      top: var(--forecast-follow-top);
+      top: var(--map-toolbar-top);
       left: 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 10px;
-      border: 1px solid rgba(255,255,255,.7);
-      border-radius: 999px;
-      color: #245166;
-      background: rgba(255,255,255,.91);
-      box-shadow: 0 8px 20px rgba(7, 35, 49, .12);
-      font-size: 10px;
-      font-weight: 700;
-      pointer-events: auto;
-      backdrop-filter: blur(16px);
+      right: 14px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      pointer-events: none;
     }
-    .advisory-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--safe); box-shadow: 0 0 0 4px rgba(10,155,131,.13); }
+    .view-controls { display: flex; gap: 6px; }
+    .weather-tools { display: grid; justify-items: end; gap: 8px; }
 
     .layer-switch {
-      position: absolute;
-      z-index: 500;
-      top: var(--forecast-follow-top);
-      right: 14px;
       display: grid;
+      grid-auto-flow: column;
       gap: 4px;
       padding: 4px;
       border: 1px solid rgba(255,255,255,.72);
@@ -230,7 +209,8 @@
     }
     .layer-switch button {
       width: 48px;
-      padding: 7px 4px;
+      height: 36px;
+      padding: 0 4px;
       border: 0;
       border-radius: 11px;
       color: #627586;
@@ -242,10 +222,6 @@
     .layer-switch button[aria-pressed="true"] { color: #fff; background: var(--navy); }
 
     .legend {
-      position: absolute;
-      z-index: 500;
-      top: calc(max(14px, env(safe-area-inset-top)) + 215px);
-      left: 14px;
       width: 54px;
       padding: 10px 8px;
       border: 1px solid rgba(255,255,255,.75);
@@ -263,60 +239,29 @@
     .legend-values { display: flex; flex-direction: column; justify-content: space-between; color: #516675; font: 700 8px/1 "DM Sans", sans-serif; }
     .legend-unit { margin-top: 7px; color: #748895; font: 700 8px/1 "DM Sans", sans-serif; text-align: center; }
 
-    .map-action {
-      position: absolute;
-      z-index: 500;
-      right: 14px;
-      bottom: 232px;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 10px 12px;
-      border: 1px solid rgba(255,255,255,.75);
-      border-radius: 14px;
-      color: #fff;
-      background: rgba(7, 28, 43, .88);
-      box-shadow: 0 10px 28px rgba(7,35,49,.18);
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 800;
-      backdrop-filter: blur(16px);
-    }
-
-    .zoom-controls {
-      position: absolute;
-      z-index: 500;
-      right: 14px;
-      bottom: 282px;
-      display: grid;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,.75);
-      border-radius: 14px;
-      background: rgba(7,28,43,.88);
-      box-shadow: 0 10px 28px rgba(7,35,49,.18);
-      backdrop-filter: blur(16px);
-    }
-    .zoom-button {
+    .map-tool-button {
       display: grid;
       place-items: center;
-      width: 40px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       padding: 0;
-      border: 0;
+      border: 1px solid rgba(255,255,255,.75);
+      border-radius: 14px;
       color: #fff;
-      background: transparent;
+      background: rgba(7,28,43,.88);
+      box-shadow: 0 10px 28px rgba(7,35,49,.18);
       cursor: pointer;
-      font: 600 23px/1 "DM Sans", sans-serif;
+      backdrop-filter: blur(16px);
     }
-    .zoom-button + .zoom-button { border-top: 1px solid rgba(255,255,255,.18); }
-    .zoom-button:hover:not(:disabled) { background: rgba(255,255,255,.12); }
-    .zoom-button:disabled { cursor: not-allowed; opacity: .34; }
+    .map-tool-button svg { width: 18px; height: 18px; stroke-width: 2.4; }
+    .map-tool-button:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+    .map-tool-button:disabled { cursor: not-allowed; opacity: .62; }
 
     .summary-card {
       position: absolute;
       z-index: 500;
-      left: 12px;
-      right: 12px;
+      left: 5px;
+      width: 380px;
       bottom: max(12px, env(safe-area-inset-bottom));
       padding: 15px;
       border: 1px solid rgba(255,255,255,.74);
@@ -327,7 +272,9 @@
     }
 
     .summary-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .eyebrow { margin: 0 0 3px; color: var(--accent); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .eyebrow-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .eyebrow { margin: 0; color: var(--accent); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .summary-advisory { padding: 3px 6px; border-radius: 999px; color: #fff; background: var(--danger); font-size: 8px; font-weight: 800; letter-spacing: 0; }
     .route-title { margin: 0; font-size: 17px; line-height: 1.25; letter-spacing: -.04em; }
     .vessel { margin-top: 4px; color: var(--muted); font-size: 10px; font-weight: 600; }
 
@@ -353,8 +300,10 @@
     }
     .trip-stop { min-width: 65px; }
     .trip-stop:last-child { text-align: right; }
-    .trip-stop strong { display: block; font: 700 16px/1 "DM Sans", sans-serif; letter-spacing: -.04em; }
+    .trip-stop strong, .arrival-time { display: block; font: 700 16px/1 "DM Sans", sans-serif; letter-spacing: -.04em; }
     .trip-stop span { display: block; margin-top: 5px; color: var(--muted); font-size: 9px; font-weight: 700; }
+    .time-label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 8px; font-weight: 800; }
+    .time-input { width: 108px; height: 30px; padding: 0 5px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #edf4f4; font: 700 14px/1 "DM Sans", sans-serif; }
     .trip-track { position: relative; height: 1px; background: #b5cbd0; }
     .trip-track::before, .trip-track::after {
       content: "";
@@ -393,6 +342,7 @@
       border-radius: 11px;
       color: var(--ink);
       background: #fff;
+      cursor: pointer;
       text-decoration: none;
       font-size: 9px;
       font-weight: 800;
@@ -539,23 +489,15 @@
     .route-option time { align-self: center; color: var(--ink); font: 700 12px/1 "DM Sans", sans-serif; }
 
     .expanded .forecast-strip,
-    .expanded .advisory,
     .expanded .summary-card { opacity: 0; pointer-events: none; transform: translateY(8px); }
-    .forecast-strip, .advisory, .summary-card { transition: opacity .2s ease, transform .2s ease; }
-    .expanded .map-action { bottom: max(18px, env(safe-area-inset-bottom)); }
-    .expanded .zoom-controls { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 50px); }
+    .forecast-strip, .summary-card { transition: opacity .2s ease, transform .2s ease; }
 
     @media (min-width: 760px) {
-      .app { --forecast-follow-top: 159px; }
+      .app { --map-toolbar-top: 137px; }
       .topbar, .forecast-strip { left: 24px; right: 24px; }
       .forecast-strip { right: auto; width: 660px; }
-      .summary-card { left: 24px; right: auto; bottom: 24px; width: 400px; }
-      .map-action { right: 24px; bottom: 24px; }
-      .zoom-controls { right: 24px; bottom: 76px; }
-      .expanded .zoom-controls { bottom: 76px; }
-      .legend { left: 24px; top: 198px; }
-      .layer-switch { right: 24px; grid-auto-flow: column; }
-      .advisory { left: 24px; }
+      .map-toolbar { left: 24px; right: 24px; }
+      .summary-card { left: 24px; bottom: 24px; }
       .sheet { left: 50%; right: auto; width: 500px; transform: translate(-50%, 102%); }
       .sheet.open { transform: translate(-50%, 0); }
     }
@@ -571,49 +513,45 @@
         <div class="brand-mark"><i data-lucide="waves"></i></div>
         <div><strong>멀미마요</strong><span>뱃길 예보 · DEMO</span></div>
       </div>
-      <nav class="top-actions" aria-label="빠른 메뉴">
-        <button class="icon-button" id="routeButton" type="button" aria-label="경로 설정" data-tooltip="경로 설정"><i data-lucide="route"></i></button>
-        <a class="icon-button" href="https://island.theksa.co.kr/page/main" target="_blank" rel="noopener noreferrer" aria-label="티켓구매 페이지 열기" data-tooltip="티켓구매"><i data-lucide="ticket"></i></a>
-      </nav>
     </header>
 
     <section class="forecast-strip" id="forecastStrip" aria-label="6일 예보"></section>
-    <div class="advisory"><span class="advisory-dot"></span><span>풍랑특보 없음 · 예시</span></div>
 
-    <aside class="layer-switch" aria-label="지도 표시 정보">
-      <button type="button" data-layer="wave" aria-pressed="true">파고</button>
-      <button type="button" data-layer="wind" aria-pressed="false">풍속</button>
-    </aside>
-
-    <aside class="legend" aria-label="지도 범례">
-      <div class="legend-title" id="legendTitle">파고</div>
-      <div class="legend-scale">
-        <div class="legend-gradient"></div>
-        <div class="legend-values" id="legendValues"></div>
+    <div class="map-toolbar">
+      <div class="view-controls" role="group" aria-label="지도 보기 조절">
+        <button class="map-tool-button" id="zoomInButton" type="button" aria-label="지도 확대" disabled><i data-lucide="plus"></i></button>
+        <button class="map-tool-button" id="zoomOutButton" type="button" aria-label="지도 축소" disabled><i data-lucide="minus"></i></button>
+        <button class="map-tool-button" id="expandButton" type="button" aria-label="지도 크게"><i data-lucide="maximize-2"></i></button>
       </div>
-      <div class="legend-unit" id="legendUnit">m</div>
-    </aside>
-
-    <div class="zoom-controls" role="group" aria-label="지도 확대 축소">
-      <button class="zoom-button" id="zoomInButton" type="button" aria-label="지도 확대" disabled>+</button>
-      <button class="zoom-button" id="zoomOutButton" type="button" aria-label="지도 축소" disabled>−</button>
+      <div class="weather-tools">
+        <aside class="layer-switch" aria-label="지도 표시 정보">
+          <button type="button" data-layer="wave" aria-pressed="true">파고</button>
+          <button type="button" data-layer="wind" aria-pressed="false">풍속</button>
+        </aside>
+        <aside class="legend" aria-label="지도 범례">
+          <div class="legend-title" id="legendTitle">파고</div>
+          <div class="legend-scale">
+            <div class="legend-gradient"></div>
+            <div class="legend-values" id="legendValues"></div>
+          </div>
+          <div class="legend-unit" id="legendUnit">m</div>
+        </aside>
+      </div>
     </div>
-
-    <button class="map-action" id="expandButton" type="button"><i data-lucide="maximize-2"></i><span>지도 크게</span></button>
 
     <section class="summary-card" aria-live="polite">
       <div class="summary-head">
         <div>
-          <p class="eyebrow" id="routeEyebrow">오늘 · 상세 예보</p>
+          <div class="eyebrow-row"><p class="eyebrow" id="routeEyebrow">오늘 · 상세 예보</p><span class="summary-advisory" id="summaryAdvisory" hidden>풍랑특보 · 예시</span></div>
           <h1 class="route-title" id="routeTitle"></h1>
           <div class="vessel" id="vessel"></div>
         </div>
         <div class="risk-pill" id="riskPill"></div>
       </div>
       <div class="trip-line">
-        <div class="trip-stop"><strong id="departureTime"></strong><span id="departurePort"></span></div>
+        <div class="trip-stop"><label class="time-label" for="departureTimeInput">출발 시간</label><input class="time-input" id="departureTimeInput" type="time" step="300" /><span id="departurePort"></span></div>
         <div class="trip-track"><i data-lucide="ship"></i></div>
-        <div class="trip-stop"><strong id="arrivalTime"></strong><span id="arrivalPort"></span></div>
+        <div class="trip-stop"><span class="time-label">도착 시간</span><output class="arrival-time" id="arrivalTime"></output><span id="arrivalPort"></span></div>
       </div>
       <div class="metrics">
         <div class="metric"><span>최고 파고</span><strong id="maxWave"></strong></div>
@@ -621,6 +559,7 @@
         <div class="metric"><span>예보 지점</span><strong id="pointCount"></strong></div>
       </div>
       <div class="summary-actions">
+        <button class="link-button" id="routeButton" type="button"><i data-lucide="route"></i><span>경로 설정</span></button>
         <a class="link-button" id="operatorLink" href="#" target="_blank" rel="noopener noreferrer"><i data-lucide="ship-wheel"></i><span>운항사</span></a>
         <a class="link-button primary" href="https://island.theksa.co.kr/page/main" target="_blank" rel="noopener noreferrer"><i data-lucide="ticket-check"></i><span>가보고싶은섬 예매</span></a>
       </div>
@@ -641,13 +580,19 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script type="module">
-    import { buildFlowParticles, buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog, getRouteMarkerLayout, getWindDirectionRotation, getZoomControlState } from './app-data.mjs';
+    import { buildFlowParticles, buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog, getRouteMarkerLayout, getRouteSchedule, getWindDirectionRotation, getZoomControlState } from './app-data.mjs';
 
     const routes = getRouteCatalog();
     const days = buildForecastDays();
     const app = document.querySelector('#app');
     const routeSheet = document.querySelector('#routeSheet');
-    const state = { routeIndex: 1, dayIndex: 0, layer: 'wave', expanded: false };
+    const state = {
+      routeIndex: 1,
+      dayIndex: 0,
+      layer: 'wave',
+      expanded: false,
+      departureTimes: Object.fromEntries(routes.map((route) => [route.id, route.departure])),
+    };
     let routeLayer;
     let flowLayer;
     let flowMarkers = [];
@@ -706,7 +651,6 @@
         <button class="day-button" type="button" data-day="${day.index}" aria-selected="${day.index === state.dayIndex}">
           <strong>${escapeHTML(day.label)}</strong>
           <span>${escapeHTML(day.date)}</span>
-          <small>${day.precision === '상세' ? '상세' : '전망 · 낮은 해상도'}</small>
         </button>
       `).join('');
     }
@@ -718,7 +662,7 @@
             <strong>${escapeHTML(route.from)} → ${escapeHTML(route.to)}</strong>
             <span>${escapeHTML(route.vessel)} · ${escapeHTML(route.operator)}</span>
           </span>
-          <time>${escapeHTML(route.departure)} — ${escapeHTML(route.arrival)}</time>
+          <time>${escapeHTML(getRouteSchedule(route, state.departureTimes[route.id]).departure)} — ${escapeHTML(getRouteSchedule(route, state.departureTimes[route.id]).arrival.replace('다음날 ', '+1 '))}</time>
         </button>
       `).join('');
     }
@@ -817,11 +761,13 @@
       const maxWind = Math.max(...points.map(({ windSpeed }) => windSpeed));
       const risk = getMotionSicknessLevel(maxWave);
       document.querySelector('#routeEyebrow').textContent = `${day.label} · ${day.precision} 예보`;
+      const summaryAdvisory = document.querySelector('#summaryAdvisory');
+      summaryAdvisory.hidden = day.state !== '위험';
       document.querySelector('#routeTitle').textContent = `${route.from} → ${route.to}`;
       document.querySelector('#vessel').textContent = `${route.vesselType} · ${route.vessel}`;
-      document.querySelector('#departureTime').textContent = route.departure;
+      document.querySelector('#departureTimeInput').value = state.departureTimes[route.id];
       document.querySelector('#departurePort').textContent = route.from;
-      document.querySelector('#arrivalTime').textContent = route.arrival;
+      document.querySelector('#arrivalTime').textContent = points.at(-1).time.replace('다음날 ', '+1 ');
       document.querySelector('#arrivalPort').textContent = route.to;
       document.querySelector('#maxWave').textContent = `${maxWave.toFixed(1)} m`;
       document.querySelector('#maxWind').textContent = `${maxWind.toFixed(1)} m/s`;
@@ -836,7 +782,11 @@
 
     function renderMap({ fit = false } = {}) {
       const route = routes[state.routeIndex];
-      const points = buildRoutePoints(route, { expanded: state.expanded, dayIndex: state.dayIndex });
+      const points = buildRoutePoints(route, {
+        expanded: state.expanded,
+        dayIndex: state.dayIndex,
+        departureTime: state.departureTimes[route.id],
+      });
       if (routeLayer) routeLayer.remove();
       if (flowLayer) flowLayer.remove();
       if (markerLayer) markerLayer.remove();
@@ -884,7 +834,10 @@
       state.expanded = expanded;
       app.classList.toggle('expanded', expanded);
       const button = document.querySelector('#expandButton');
-      button.innerHTML = `<i data-lucide="${expanded ? 'minimize-2' : 'maximize-2'}"></i><span>${expanded ? '요약 보기' : '지도 크게'}</span>`;
+      const label = expanded ? '요약 보기' : '지도 크게';
+      button.innerHTML = `<i data-lucide="${expanded ? 'minimize-2' : 'maximize-2'}"></i>`;
+      button.setAttribute('aria-label', label);
+      button.title = label;
       renderMap();
       if (!fromZoom && expanded) map.setZoom(Math.min(map.getZoom() + 1, map.getMaxZoom()));
       if (!fromZoom && !expanded) {
@@ -941,6 +894,12 @@
     });
 
     document.querySelector('#routeButton').addEventListener('click', openSheet);
+    document.querySelector('#departureTimeInput').addEventListener('input', (event) => {
+      if (!event.target.value) return;
+      state.departureTimes[routes[state.routeIndex].id] = event.target.value;
+      renderMap();
+      renderRouteOptions();
+    });
     document.querySelector('#sheetClose').addEventListener('click', closeSheet);
     document.querySelector('#sheetBackdrop').addEventListener('click', closeSheet);
     document.querySelector('#expandButton').addEventListener('click', () => setExpanded(!state.expanded));

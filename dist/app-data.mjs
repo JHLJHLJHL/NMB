@@ -289,12 +289,13 @@ function interpolatePosition(route, progress) {
   return [...route.end];
 }
 
-function sampleWeather(route, progress, dayIndex) {
+function sampleWeather(route, progress, dayIndex, clockMinutes) {
   const profile = DAY_PROFILES[dayIndex] ?? DAY_PROFILES.at(-1);
   const openSea = Math.sin(Math.PI * progress);
   const ripple = Math.sin((progress + route.weatherBias) * Math.PI * 3) * 0.12;
-  const waveHeight = Math.max(0.4, 0.7 + profile.wave + openSea * 0.82 + ripple);
-  const windSpeed = Math.max(2.5, 4.6 + profile.wind + openSea * 3.9 + ripple * 2.2);
+  const timeShift = Math.sin((((clockMinutes % 1440) + 1440) % 1440) / 1440 * Math.PI * 2);
+  const waveHeight = Math.max(0.4, 0.7 + profile.wave + openSea * 0.82 + ripple + timeShift * 0.18);
+  const windSpeed = Math.max(2.5, 4.6 + profile.wind + openSea * 3.9 + ripple * 2.2 + timeShift * 1.2);
   const directionIndex = Math.min(
     WIND_DIRECTIONS.length - 1,
     Math.floor(progress * WIND_DIRECTIONS.length),
@@ -333,7 +334,16 @@ export function getWindDirectionRotation(direction) {
   return index < 0 ? 0 : index * 45;
 }
 
-export function buildRoutePoints(route, { expanded = false, dayIndex = 0 } = {}) {
+export function getRouteSchedule(route, departureTime = route.departure) {
+  const departure = /^\d{2}:\d{2}$/.test(departureTime) ? departureTime : route.departure;
+  return {
+    departure,
+    arrival: formatRouteTime(parseTime(departure), route.durationMinutes),
+    durationMinutes: route.durationMinutes,
+  };
+}
+
+export function buildRoutePoints(route, { expanded = false, dayIndex = 0, departureTime = route.departure } = {}) {
   const offsets = expanded
     ? Array.from(
       new Set([
@@ -346,10 +356,11 @@ export function buildRoutePoints(route, { expanded = false, dayIndex = 0 } = {})
     ).sort((a, b) => a - b)
     : [0, 0.25, 0.5, 0.75, 1].map((progress) => route.durationMinutes * progress);
 
-  const startMinutes = parseTime(route.departure);
+  const { departure } = getRouteSchedule(route, departureTime);
+  const startMinutes = parseTime(departure);
   return offsets.map((minutesFromStart, index) => {
     const progress = minutesFromStart / route.durationMinutes;
-    const weather = sampleWeather(route, progress, dayIndex);
+    const weather = sampleWeather(route, progress, dayIndex, startMinutes + minutesFromStart);
     const isEndpoint = index === 0 || index === offsets.length - 1;
     return {
       id: `${route.id}-${dayIndex}-${index}`,

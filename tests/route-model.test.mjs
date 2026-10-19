@@ -40,6 +40,36 @@ test('overnight route marks arrival as next day and preserves the final time', (
   assert.equal(points.at(-1).minutesFromStart, 420);
 });
 
+test('manual departure time preserves sailing duration and calculates arrival', () => {
+  assert.equal(typeof model.getRouteSchedule, 'function');
+  const daytimeRoute = model.getRouteCatalog()[1];
+  const overnightRoute = model.getRouteCatalog()[0];
+
+  assert.deepEqual(model.getRouteSchedule(daytimeRoute, '10:30'), {
+    departure: '10:30',
+    arrival: '13:20',
+    durationMinutes: 170,
+  });
+  assert.deepEqual(model.getRouteSchedule(overnightRoute, '23:30'), {
+    departure: '23:30',
+    arrival: '다음날 06:30',
+    durationMinutes: 420,
+  });
+});
+
+test('changing departure time updates point times and weather samples', () => {
+  const route = model.getRouteCatalog()[1];
+  const morning = model.buildRoutePoints(route, { departureTime: '06:00', dayIndex: 0 });
+  const afternoon = model.buildRoutePoints(route, { departureTime: '15:00', dayIndex: 0 });
+
+  assert.equal(morning[0].time, '06:00');
+  assert.equal(morning.at(-1).time, '08:50');
+  assert.equal(afternoon[0].time, '15:00');
+  assert.equal(afternoon.at(-1).time, '17:50');
+  assert.notEqual(morning[2].windSpeed, afternoon[2].windSpeed);
+  assert.notEqual(morning[2].waveHeight, afternoon[2].waveHeight);
+});
+
 test('expanded map adds half-hour route points without removing endpoints', () => {
   const route = model.getRouteCatalog()[2];
   const base = model.buildRoutePoints(route, { expanded: false, dayIndex: 0 });
