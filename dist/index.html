@@ -107,6 +107,7 @@
 
     .top-actions { display: flex; gap: 7px; }
     .icon-button {
+      position: relative;
       display: grid;
       place-items: center;
       width: 42px;
@@ -120,6 +121,30 @@
       backdrop-filter: blur(18px);
       cursor: pointer;
       text-decoration: none;
+    }
+    .icon-button::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: max-content;
+      padding: 6px 9px;
+      border: 1px solid rgba(255,255,255,.5);
+      border-radius: 9px;
+      color: #fff;
+      background: rgba(7,28,43,.92);
+      box-shadow: 0 8px 22px rgba(4,21,35,.2);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-3px);
+      transition: opacity .16s ease, transform .16s ease;
+    }
+    .icon-button:focus-visible::after { opacity: 1; transform: translateY(0); }
+    @media (hover: hover) {
+      .icon-button:hover::after { opacity: 1; transform: translateY(0); }
     }
 
     .forecast-strip {
@@ -500,8 +525,8 @@
         <div><strong>멀미마요</strong><span>뱃길 예보 · DEMO</span></div>
       </div>
       <nav class="top-actions" aria-label="빠른 메뉴">
-        <button class="icon-button" id="routeButton" type="button" aria-label="항로 선택"><i data-lucide="route"></i></button>
-        <a class="icon-button" href="https://island.theksa.co.kr/page/main" target="_blank" rel="noopener noreferrer" aria-label="여객선 예매 페이지 열기"><i data-lucide="ticket"></i></a>
+        <button class="icon-button" id="routeButton" type="button" aria-label="경로 설정" data-tooltip="경로 설정"><i data-lucide="route"></i></button>
+        <a class="icon-button" href="https://island.theksa.co.kr/page/main" target="_blank" rel="noopener noreferrer" aria-label="티켓구매 페이지 열기" data-tooltip="티켓구매"><i data-lucide="ticket"></i></a>
       </nav>
     </header>
 
