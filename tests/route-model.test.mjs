@@ -123,3 +123,48 @@ test('flow particles advance from departure toward arrival and wrap continuously
     [0.9, 0.15, 0.4, 0.65],
   );
 });
+
+test('route flow defaults to one particle that traverses the full route', () => {
+  const route = model.getRouteCatalog()[0];
+  const departure = model.buildFlowParticles(route, { phase: 0 });
+  const nearArrival = model.buildFlowParticles(route, { phase: 0.99 });
+
+  assert.equal(departure.length, 1);
+  assert.deepEqual(departure[0].position, route.start);
+  assert.equal(nearArrival.length, 1);
+  assert.equal(nearArrival[0].progress, 0.99);
+  assert.notDeepEqual(nearArrival[0].position, route.start);
+});
+
+test('routes follow the mapped OpenStreetMap ferry ways in both directions', () => {
+  const [yeongilmanToSadong, pohangToDodong, sadongToYeongilman, dodongToPohang] = model.getRouteCatalog();
+
+  assert.equal(yeongilmanToSadong.path.length, 103);
+  assert.equal(pohangToDodong.path.length, 42);
+  assert.deepEqual(yeongilmanToSadong.path[0], yeongilmanToSadong.start);
+  assert.deepEqual(yeongilmanToSadong.path.at(-1), yeongilmanToSadong.end);
+  assert.deepEqual(pohangToDodong.path[0], pohangToDodong.start);
+  assert.deepEqual(pohangToDodong.path.at(-1), pohangToDodong.end);
+  assert.deepEqual(sadongToYeongilman.path, [...yeongilmanToSadong.path].reverse());
+  assert.deepEqual(dodongToPohang.path, [...pohangToDodong.path].reverse());
+});
+
+test('route interpolation follows cumulative mapped path distance', () => {
+  const route = model.getRouteCatalog()[1];
+  const midpoint = model.buildFlowParticles(route, { phase: 0.5 })[0].position;
+
+  assert.ok(midpoint[0] > 36.61 && midpoint[0] < 36.71);
+  assert.ok(midpoint[1] > 130.18 && midpoint[1] < 130.29);
+});
+
+test('both marker sizes keep a pointed pin anchored by its tip', () => {
+  assert.equal(typeof model.getRouteMarkerLayout, 'function');
+  assert.deepEqual(model.getRouteMarkerLayout(false), {
+    iconSize: [36, 44],
+    iconAnchor: [18, 43],
+  });
+  assert.deepEqual(model.getRouteMarkerLayout(true), {
+    iconSize: [30, 36],
+    iconAnchor: [15, 35],
+  });
+});

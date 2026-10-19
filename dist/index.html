@@ -346,8 +346,11 @@
     .notice { margin: 9px 0 0; color: #71828e; font-size: 8px; line-height: 1.45; }
 
     .route-marker { background: none; border: 0; }
-    .marker-shell { position: relative; display: grid; place-items: center; width: 36px; height: 36px; }
+    .marker-shell { position: relative; width: 36px; height: 44px; }
     .marker-face {
+      position: absolute;
+      top: 1px;
+      left: 1px;
       display: grid;
       place-items: center;
       width: 34px;
@@ -379,9 +382,14 @@
     .marker-label strong { font: 700 11px/1.2 "DM Sans", sans-serif; }
     .route-marker.label-left .marker-label { left: auto; right: 41px; text-align: right; }
     .route-marker.compact .marker-label { display: none; }
-    .route-marker.compact .marker-shell, .route-marker.compact .marker-face { width: 28px; height: 28px; }
-    .route-marker.compact .marker-face { border-width: 2px; border-radius: 50%; transform: none; }
-    .route-marker.compact .marker-face svg { width: 15px; height: 15px; transform: none; }
+    .route-marker.compact .marker-shell { width: 30px; height: 36px; }
+    .route-marker.compact .marker-face {
+      width: 28px;
+      height: 28px;
+      border-width: 2px;
+      border-radius: 50% 50% 50% 7px;
+    }
+    .route-marker.compact .marker-face svg { width: 15px; height: 15px; }
 
     .flow-particle-icon { background: transparent; border: 0; pointer-events: none !important; }
     .flow-particle {
@@ -556,7 +564,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script type="module">
-    import { buildFlowParticles, buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog } from './app-data.mjs';
+    import { buildFlowParticles, buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog, getRouteMarkerLayout } from './app-data.mjs';
 
     const routes = getRouteCatalog();
     const days = buildForecastDays();
@@ -635,6 +643,7 @@
     function markerIcon(point, index, total) {
       const risk = getMotionSicknessLevel(point.waveHeight);
       const compact = state.expanded && !point.isEndpoint;
+      const { iconSize, iconAnchor } = getRouteMarkerLayout(compact);
       const labelLeft = point.position[1] > 130.25;
       const displayTime = point.time.replace('다음날 ', '+1 ');
       const label = `<div class="marker-label"><strong>${escapeHTML(displayTime)}</strong><br>${point.waveHeight.toFixed(1)}m · ${point.windSpeed.toFixed(1)}m/s</div>`;
@@ -646,8 +655,24 @@
       return L.divIcon({
         className: `route-marker ${compact ? 'compact' : ''} ${labelLeft ? 'label-left' : ''}`,
         html,
-        iconSize: compact ? [28, 28] : [36, 36],
-        iconAnchor: compact ? [14, 14] : [18, 18],
+        iconSize,
+        iconAnchor,
+      });
+    }
+
+    function mappedRouteSegments(route, forecastPoints) {
+      const path = route.path;
+      const cumulative = [0];
+      path.slice(1).forEach((position, index) => {
+        cumulative.push(cumulative.at(-1) + map.distance(path[index], position));
+      });
+      const totalDistance = cumulative.at(-1) || 1;
+      return path.slice(0, -1).map((position, index) => {
+        const progress = (cumulative[index] + cumulative[index + 1]) / 2 / totalDistance;
+        const weather = forecastPoints.reduce((nearest, point) => (
+          Math.abs(point.progress - progress) < Math.abs(nearest.progress - progress) ? point : nearest
+        ));
+        return { position, nextPosition: path[index + 1], weather };
       });
     }
 
@@ -668,7 +693,6 @@
       if (flowAnimationFrame) cancelAnimationFrame(flowAnimationFrame);
       flowMarkers = [];
       flowAnimationStartedAt = performance.now();
-      const particleCount = state.expanded ? 9 : 6;
       const particleIcon = L.divIcon({
         className: 'flow-particle-icon',
         html: '<span class="flow-particle"></span>',
@@ -677,8 +701,8 @@
       });
 
       const draw = (timestamp) => {
-        const phase = reduceMotion ? 0.06 : ((timestamp - flowAnimationStartedAt) % 2400) / 2400;
-        const particles = buildFlowParticles(route, { phase, count: particleCount });
+        const phase = reduceMotion ? 0.06 : ((timestamp - flowAnimationStartedAt) % 4200) / 4200;
+        const particles = buildFlowParticles(route, { phase });
         if (!flowMarkers.length) {
           flowMarkers = particles.map(({ position }) => L.marker(position, {
             icon: particleIcon,
@@ -737,12 +761,11 @@
       flowLayer = L.layerGroup().addTo(map);
       markerLayer = L.layerGroup().addTo(map);
 
-      points.slice(0, -1).forEach((point, index) => {
-        const next = points[index + 1];
+      mappedRouteSegments(route, points).forEach(({ position, nextPosition, weather }) => {
         const value = state.layer === 'wave'
-          ? Math.max(point.waveHeight, next.waveHeight)
-          : Math.max(point.windSpeed, next.windSpeed);
-        L.polyline([point.position, next.position], {
+          ? weather.waveHeight
+          : weather.windSpeed;
+        L.polyline([position, nextPosition], {
           color: colorFor(value, state.layer),
           weight: state.expanded ? 5 : 6,
           opacity: .93,
@@ -759,7 +782,7 @@
 
       if (fit) {
         map.setMinZoom(6);
-        map.fitBounds(L.latLngBounds(points.map(({ position }) => position)), {
+        map.fitBounds(L.latLngBounds(route.path), {
           paddingTopLeft: [46, 190],
           paddingBottomRight: [46, 255],
           animate: false,
@@ -782,7 +805,7 @@
       if (!fromZoom && expanded) map.setZoom(Math.min(map.getZoom() + 1, map.getMaxZoom()));
       if (!fromZoom && !expanded) {
         map.setZoom(fittedMinZoom);
-        map.panTo(L.latLngBounds(buildRoutePoints(routes[state.routeIndex]).map(({ position }) => position)).getCenter());
+        map.panTo(L.latLngBounds(routes[state.routeIndex].path).getCenter());
       }
     }
 
