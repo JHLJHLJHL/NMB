@@ -189,11 +189,15 @@ const MOTION_SICKNESS_LEVELS = [
   { max: 0.8, level: 1, label: '편안', icon: 'face-grinning', color: '#0a9b83' },
   { max: 1.6, level: 2, label: '괜찮음', icon: 'face-slightly-smiling', color: '#71ad45' },
   { max: 2.4, level: 3, label: '주의', icon: 'face-neutral', color: '#e2a934' },
-  { max: 3.2, level: 4, label: '힘듦', icon: 'face-slightly-frowning', color: '#e57838' },
+  { max: 3.2, exclusive: true, level: 4, label: '힘듦', icon: 'face-slightly-frowning', color: '#e57838' },
   { max: Number.POSITIVE_INFINITY, level: 5, label: '매우 힘듦', icon: 'face-angry', color: '#d84949' },
 ];
 
 export function getMotionSicknessLevel(waveHeight) {
   const safeWaveHeight = Math.max(0, Number(waveHeight) || 0);
-  return { ...MOTION_SICKNESS_LEVELS.find(({ max }) => safeWaveHeight <= max) };
+  return {
+    ...MOTION_SICKNESS_LEVELS.find(({ max, exclusive }) => (
+      exclusive ? safeWaveHeight < max : safeWaveHeight <= max
+    )),
+  };
 }

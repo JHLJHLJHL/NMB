@@ -82,8 +82,8 @@ test('wave height maps to five Lucide face-based motion sickness levels', () => 
     [1.61, 3, 'face-neutral'],
     [2.4, 3, 'face-neutral'],
     [2.41, 4, 'face-slightly-frowning'],
-    [3.2, 4, 'face-slightly-frowning'],
-    [3.21, 5, 'face-angry'],
+    [3.19, 4, 'face-slightly-frowning'],
+    [3.2, 5, 'face-angry'],
     [3.5, 5, 'face-angry'],
   ];
 
