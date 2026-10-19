@@ -72,6 +72,15 @@ test('every generated point contains time, wave height, wind speed and wind dire
   }
 });
 
+test('eight wind directions map to arrow rotations in 45 degree steps', () => {
+  assert.equal(typeof model.getWindDirectionRotation, 'function');
+  assert.deepEqual(
+    ['북풍', '북동풍', '동풍', '남동풍', '남풍', '남서풍', '서풍', '북서풍']
+      .map((direction) => model.getWindDirectionRotation(direction)),
+    [0, 45, 90, 135, 180, 225, 270, 315],
+  );
+});
+
 test('wave height maps to five Lucide face-based motion sickness levels', () => {
   assert.equal(typeof model.getMotionSicknessLevel, 'function');
   const cases = [
@@ -166,5 +175,21 @@ test('both marker sizes keep a pointed pin anchored by its tip', () => {
   assert.deepEqual(model.getRouteMarkerLayout(true), {
     iconSize: [30, 36],
     iconAnchor: [15, 35],
+  });
+});
+
+test('zoom controls disable only at the fitted minimum and map maximum', () => {
+  assert.equal(typeof model.getZoomControlState, 'function');
+  assert.deepEqual(model.getZoomControlState({ zoom: 7, minZoom: 7, maxZoom: 12 }), {
+    zoomInDisabled: false,
+    zoomOutDisabled: true,
+  });
+  assert.deepEqual(model.getZoomControlState({ zoom: 9, minZoom: 7, maxZoom: 12 }), {
+    zoomInDisabled: false,
+    zoomOutDisabled: false,
+  });
+  assert.deepEqual(model.getZoomControlState({ zoom: 12, minZoom: 7, maxZoom: 12 }), {
+    zoomInDisabled: true,
+    zoomOutDisabled: false,
   });
 });

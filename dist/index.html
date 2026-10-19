@@ -282,6 +282,35 @@
       backdrop-filter: blur(16px);
     }
 
+    .zoom-controls {
+      position: absolute;
+      z-index: 500;
+      right: 14px;
+      bottom: 282px;
+      display: grid;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.75);
+      border-radius: 14px;
+      background: rgba(7,28,43,.88);
+      box-shadow: 0 10px 28px rgba(7,35,49,.18);
+      backdrop-filter: blur(16px);
+    }
+    .zoom-button {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 38px;
+      padding: 0;
+      border: 0;
+      color: #fff;
+      background: transparent;
+      cursor: pointer;
+      font: 600 23px/1 "DM Sans", sans-serif;
+    }
+    .zoom-button + .zoom-button { border-top: 1px solid rgba(255,255,255,.18); }
+    .zoom-button:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+    .zoom-button:disabled { cursor: not-allowed; opacity: .34; }
+
     .summary-card {
       position: absolute;
       z-index: 500;
@@ -405,6 +434,17 @@
       font-weight: 700;
     }
     .marker-label strong { font: 700 11px/1.2 "DM Sans", sans-serif; }
+    .wind-value { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+    .wind-arrow {
+      display: inline-grid;
+      place-items: center;
+      width: 13px;
+      height: 13px;
+      color: currentColor;
+      transform: rotate(var(--wind-rotation));
+      transform-origin: center;
+    }
+    .wind-arrow svg { width: 13px; height: 13px; stroke-width: 2.4; }
     .route-marker.label-left .marker-label { left: auto; right: 41px; text-align: right; }
     .route-marker.compact .marker-label { display: none; }
     .route-marker.compact .marker-shell { width: 30px; height: 36px; }
@@ -447,6 +487,7 @@
     .popup-grid div { padding: 7px; border-radius: 9px; background: #edf4f4; }
     .popup-grid span { display: block; color: #71828d; font-size: 8px; }
     .popup-grid strong { display: block; margin-top: 2px; font: 700 11px/1.2 "DM Sans", sans-serif; }
+    .popup-grid .wind-value { display: inline-flex; }
 
     .sheet-backdrop {
       position: absolute;
@@ -469,10 +510,11 @@
       border-radius: 28px 28px 0 0;
       background: #f7faf9;
       box-shadow: 0 -20px 60px rgba(3,17,27,.24);
+      visibility: hidden;
       transform: translateY(102%);
-      transition: transform .28s cubic-bezier(.22,.75,.25,1);
+      transition: transform .28s cubic-bezier(.22,.75,.25,1), visibility 0s linear .28s;
     }
-    .sheet.open { transform: translateY(0); }
+    .sheet.open { visibility: visible; transform: translateY(0); transition-delay: 0s; }
     .sheet.open + .sheet-backdrop { opacity: 1; pointer-events: auto; }
     .sheet-handle { width: 38px; height: 4px; margin: 0 auto 15px; border-radius: 99px; background: #c1ced1; }
     .sheet-header { display: flex; align-items: center; justify-content: space-between; }
@@ -500,12 +542,15 @@
     .expanded .summary-card { opacity: 0; pointer-events: none; transform: translateY(8px); }
     .forecast-strip, .advisory, .summary-card { transition: opacity .2s ease, transform .2s ease; }
     .expanded .map-action { bottom: max(18px, env(safe-area-inset-bottom)); }
+    .expanded .zoom-controls { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 50px); }
 
     @media (min-width: 760px) {
       .topbar, .forecast-strip { left: 24px; right: 24px; }
       .forecast-strip { right: auto; width: 660px; }
       .summary-card { left: 24px; right: auto; bottom: 24px; width: 400px; }
       .map-action { right: 24px; bottom: 24px; }
+      .zoom-controls { right: 24px; bottom: 76px; }
+      .expanded .zoom-controls { bottom: 76px; }
       .legend { left: 24px; top: 198px; }
       .layer-switch { right: 24px; top: 88px; grid-auto-flow: column; }
       .advisory { left: 24px; top: 143px; }
@@ -546,6 +591,11 @@
       </div>
       <div class="legend-unit" id="legendUnit">m</div>
     </aside>
+
+    <div class="zoom-controls" role="group" aria-label="지도 확대 축소">
+      <button class="zoom-button" id="zoomInButton" type="button" aria-label="지도 확대" disabled>+</button>
+      <button class="zoom-button" id="zoomOutButton" type="button" aria-label="지도 축소" disabled>−</button>
+    </div>
 
     <button class="map-action" id="expandButton" type="button"><i data-lucide="maximize-2"></i><span>지도 크게</span></button>
 
@@ -589,7 +639,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script type="module">
-    import { buildFlowParticles, buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog, getRouteMarkerLayout } from './app-data.mjs';
+    import { buildFlowParticles, buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog, getRouteMarkerLayout, getWindDirectionRotation, getZoomControlState } from './app-data.mjs';
 
     const routes = getRouteCatalog();
     const days = buildForecastDays();
@@ -632,8 +682,14 @@
         'face-neutral': '<circle cx="12" cy="12" r="9"/><path d="M9 15h6"/><path d="M9 9h.01M15 9h.01"/>',
         'face-slightly-frowning': '<circle cx="12" cy="12" r="9"/><path d="M8 16s1.5-2 4-2 4 2 4 2"/><path d="M9 9h.01M15 9h.01"/>',
         'face-angry': '<circle cx="12" cy="12" r="9"/><path d="m8 9 2 1M16 9l-2 1"/><path d="M8 16s1.5-2 4-2 4 2 4 2"/>',
+        'arrow-up': '<path d="m18 15-6-6-6 6"/><path d="M12 9v12"/>',
       };
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons['face-neutral']}</svg>`;
+    }
+
+    function windDirectionHTML(direction, { showLabel = false } = {}) {
+      const rotation = getWindDirectionRotation(direction);
+      return `<span class="wind-value"><span class="wind-arrow" style="--wind-rotation:${rotation}deg">${iconSVG('arrow-up', 13)}</span>${showLabel ? escapeHTML(direction) : ''}</span>`;
     }
 
     function colorFor(value, type) {
@@ -671,7 +727,7 @@
       const { iconSize, iconAnchor } = getRouteMarkerLayout(compact);
       const labelLeft = point.position[1] > 130.25;
       const displayTime = point.time.replace('다음날 ', '+1 ');
-      const label = `<div class="marker-label"><strong>${escapeHTML(displayTime)}</strong><br>${point.waveHeight.toFixed(1)}m · ${point.windSpeed.toFixed(1)}m/s</div>`;
+      const label = `<div class="marker-label"><strong>${escapeHTML(displayTime)}</strong><br>${point.waveHeight.toFixed(1)}m · ${windDirectionHTML(point.windDirection)}${point.windSpeed.toFixed(1)}m/s</div>`;
       const html = `
         <div class="marker-shell">
           <div class="marker-face" style="--marker-color:${risk.color}">${iconSVG(risk.icon, 19)}</div>
@@ -709,7 +765,7 @@
         <div class="popup-grid">
           <div><span>파고</span><strong>${point.waveHeight.toFixed(1)} m</strong></div>
           <div><span>풍속</span><strong>${point.windSpeed.toFixed(1)} m/s</strong></div>
-          <div><span>풍향</span><strong>${escapeHTML(point.windDirection)}</strong></div>
+          <div><span>풍향</span><strong>${windDirectionHTML(point.windDirection, { showLabel: true })}</strong></div>
           <div><span>체감</span><strong style="color:${risk.color}">${escapeHTML(risk.label)}</strong></div>
         </div>`;
     }
@@ -815,6 +871,7 @@
         fittedMinZoom = map.getZoom();
         map.options.minZoom = fittedMinZoom;
       }
+      updateZoomControls();
       renderSummary(points);
       renderLegend();
       if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 2 } });
@@ -832,6 +889,17 @@
         map.setZoom(fittedMinZoom);
         map.panTo(L.latLngBounds(routes[state.routeIndex].path).getCenter());
       }
+    }
+
+    function updateZoomControls() {
+      if (!fittedMinZoom) return;
+      const { zoomInDisabled, zoomOutDisabled } = getZoomControlState({
+        zoom: map.getZoom(),
+        minZoom: fittedMinZoom,
+        maxZoom: map.getMaxZoom(),
+      });
+      document.querySelector('#zoomInButton').disabled = zoomInDisabled;
+      document.querySelector('#zoomOutButton').disabled = zoomOutDisabled;
     }
 
     function openSheet() {
@@ -874,9 +942,12 @@
     document.querySelector('#sheetClose').addEventListener('click', closeSheet);
     document.querySelector('#sheetBackdrop').addEventListener('click', closeSheet);
     document.querySelector('#expandButton').addEventListener('click', () => setExpanded(!state.expanded));
+    document.querySelector('#zoomInButton').addEventListener('click', () => map.zoomIn(1));
+    document.querySelector('#zoomOutButton').addEventListener('click', () => map.zoomOut(1));
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && routeSheet.classList.contains('open')) closeSheet(); });
     map.on('zoomend', () => {
       if (!fittedMinZoom) return;
+      updateZoomControls();
       const shouldExpand = map.getZoom() > fittedMinZoom + .25;
       if (shouldExpand !== state.expanded) setExpanded(shouldExpand, true);
     });

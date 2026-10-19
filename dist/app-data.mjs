@@ -234,7 +234,7 @@ const DAY_PROFILES = [
   { wave: -0.05, wind: -0.1, summary: '오전 비교적 양호', state: '양호' },
 ];
 
-const WIND_DIRECTIONS = ['북동풍', '동북동풍', '동풍', '동남동풍', '남동풍'];
+const WIND_DIRECTIONS = ['북풍', '북동풍', '동풍', '남동풍', '남풍', '남서풍', '서풍', '북서풍'];
 
 function parseTime(value) {
   const [hours, minutes] = value.split(':').map(Number);
@@ -319,6 +319,18 @@ export function getRouteMarkerLayout(compact = false) {
   return compact
     ? { iconSize: [30, 36], iconAnchor: [15, 35] }
     : { iconSize: [36, 44], iconAnchor: [18, 43] };
+}
+
+export function getZoomControlState({ zoom, minZoom, maxZoom }) {
+  return {
+    zoomInDisabled: zoom >= maxZoom,
+    zoomOutDisabled: zoom <= minZoom,
+  };
+}
+
+export function getWindDirectionRotation(direction) {
+  const index = WIND_DIRECTIONS.indexOf(direction);
+  return index < 0 ? 0 : index * 45;
 }
 
 export function buildRoutePoints(route, { expanded = false, dayIndex = 0 } = {}) {
