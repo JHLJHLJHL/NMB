@@ -383,6 +383,26 @@
     .route-marker.compact .marker-face { border-width: 2px; border-radius: 50%; transform: none; }
     .route-marker.compact .marker-face svg { width: 15px; height: 15px; transform: none; }
 
+    .flow-particle-icon { background: transparent; border: 0; pointer-events: none !important; }
+    .flow-particle {
+      display: block;
+      width: 11px;
+      height: 11px;
+      border: 2px solid rgba(255,255,255,.98);
+      border-radius: 50%;
+      background: #0b8f80;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.24), 0 3px 10px rgba(3,31,42,.34);
+      animation: flow-pulse 1.15s ease-in-out infinite;
+      will-change: opacity, transform;
+    }
+    @keyframes flow-pulse {
+      0%, 100% { opacity: .76; transform: scale(.82); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .flow-particle { animation: none; opacity: .78; }
+    }
+
     .leaflet-popup-content-wrapper {
       border-radius: 17px;
       box-shadow: 0 16px 36px rgba(4,25,39,.2);
@@ -536,7 +556,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script type="module">
-    import { buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog } from './app-data.mjs';
+    import { buildFlowParticles, buildForecastDays, buildRoutePoints, getMotionSicknessLevel, getRouteCatalog } from './app-data.mjs';
 
     const routes = getRouteCatalog();
     const days = buildForecastDays();
@@ -544,8 +564,13 @@
     const routeSheet = document.querySelector('#routeSheet');
     const state = { routeIndex: 1, dayIndex: 0, layer: 'wave', expanded: false };
     let routeLayer;
+    let flowLayer;
+    let flowMarkers = [];
+    let flowAnimationFrame;
+    let flowAnimationStartedAt;
     let markerLayer;
     let fittedMinZoom;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const map = L.map('map', {
       zoomControl: false,
@@ -639,6 +664,37 @@
         </div>`;
     }
 
+    function startRouteFlow(route) {
+      if (flowAnimationFrame) cancelAnimationFrame(flowAnimationFrame);
+      flowMarkers = [];
+      flowAnimationStartedAt = performance.now();
+      const particleCount = state.expanded ? 9 : 6;
+      const particleIcon = L.divIcon({
+        className: 'flow-particle-icon',
+        html: '<span class="flow-particle"></span>',
+        iconSize: [11, 11],
+        iconAnchor: [5.5, 5.5],
+      });
+
+      const draw = (timestamp) => {
+        const phase = reduceMotion ? 0.06 : ((timestamp - flowAnimationStartedAt) % 2400) / 2400;
+        const particles = buildFlowParticles(route, { phase, count: particleCount });
+        if (!flowMarkers.length) {
+          flowMarkers = particles.map(({ position }) => L.marker(position, {
+            icon: particleIcon,
+            interactive: false,
+            keyboard: false,
+            zIndexOffset: -80,
+          }).addTo(flowLayer));
+        } else {
+          particles.forEach(({ position }, index) => flowMarkers[index].setLatLng(position));
+        }
+        if (!reduceMotion) flowAnimationFrame = requestAnimationFrame(draw);
+      };
+
+      flowAnimationFrame = requestAnimationFrame(draw);
+    }
+
     function renderLegend() {
       const wave = state.layer === 'wave';
       document.querySelector('#legendTitle').textContent = wave ? '파고' : '풍속';
@@ -675,8 +731,10 @@
       const route = routes[state.routeIndex];
       const points = buildRoutePoints(route, { expanded: state.expanded, dayIndex: state.dayIndex });
       if (routeLayer) routeLayer.remove();
+      if (flowLayer) flowLayer.remove();
       if (markerLayer) markerLayer.remove();
       routeLayer = L.layerGroup().addTo(map);
+      flowLayer = L.layerGroup().addTo(map);
       markerLayer = L.layerGroup().addTo(map);
 
       points.slice(0, -1).forEach((point, index) => {
@@ -697,6 +755,7 @@
           .bindPopup(markerPopup(point), { closeButton: false, offset: [0, -10] })
           .addTo(markerLayer);
       });
+      startRouteFlow(route);
 
       if (fit) {
         map.setMinZoom(6);

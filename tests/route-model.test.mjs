@@ -107,3 +107,19 @@ test('every route links to its official ferry operator', () => {
     ],
   );
 });
+
+test('flow particles advance from departure toward arrival and wrap continuously', () => {
+  assert.equal(typeof model.buildFlowParticles, 'function');
+  const route = model.getRouteCatalog()[1];
+  const start = model.buildFlowParticles(route, { phase: 0, count: 4 });
+  const later = model.buildFlowParticles(route, { phase: 0.1, count: 4 });
+
+  assert.equal(start.length, 4);
+  assert.deepEqual(start[0].position, route.start);
+  assert.ok(later[0].progress > start[0].progress);
+  assert.deepEqual(start.map(({ progress }) => progress), [0, 0.25, 0.5, 0.75]);
+  assert.deepEqual(
+    model.buildFlowParticles(route, { phase: 0.9, count: 4 }).map(({ progress }) => progress),
+    [0.9, 0.15, 0.4, 0.65],
+  );
+});

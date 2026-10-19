@@ -170,6 +170,18 @@ export function buildRoutePoints(route, { expanded = false, dayIndex = 0 } = {})
   });
 }
 
+export function buildFlowParticles(route, { phase = 0, count = 6 } = {}) {
+  const safeCount = Math.max(1, Math.floor(Number(count) || 1));
+  const normalizedPhase = ((Number(phase) || 0) % 1 + 1) % 1;
+  return Array.from({ length: safeCount }, (_, index) => {
+    const progress = round((normalizedPhase + index / safeCount) % 1, 6);
+    return {
+      progress,
+      position: interpolatePosition(route, progress),
+    };
+  });
+}
+
 export function buildForecastDays(baseDate = new Date()) {
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
   return Array.from({ length: 6 }, (_, index) => {
