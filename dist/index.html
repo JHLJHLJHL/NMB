@@ -180,7 +180,8 @@
     }
     .day-button[aria-selected="true"] { color: #fff; background: var(--navy); }
     .day-button strong { display: block; font-size: 12px; line-height: 1.2; }
-    .day-button span { display: block; margin-top: 3px; font: 600 10px/1.2 "DM Sans", sans-serif; opacity: .65; }
+    .day-label-short { display: none; }
+    .day-button > span { display: block; margin-top: 3px; font: 600 10px/1.2 "DM Sans", sans-serif; opacity: .65; }
 
     .map-toolbar {
       position: absolute;
@@ -302,8 +303,23 @@
     .trip-stop:last-child { text-align: right; }
     .trip-stop strong, .arrival-time { display: block; font: 700 16px/1 "DM Sans", sans-serif; letter-spacing: -.04em; }
     .trip-stop span { display: block; margin-top: 5px; color: var(--muted); font-size: 9px; font-weight: 700; }
-    .time-label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 8px; font-weight: 800; }
-    .time-input { width: 108px; height: 30px; padding: 0 5px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #edf4f4; font: 700 14px/1 "DM Sans", sans-serif; }
+    .trip-stop .time-label { display: block; margin: 0 0 4px; color: var(--muted); font-size: 8px; font-weight: 800; }
+    .departure-time-control { display: flex; align-items: center; gap: 6px; }
+    .departure-time-value { font: 700 16px/1 "DM Sans", sans-serif; letter-spacing: -.04em; }
+    .time-adjust-button {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--ink);
+      background: #edf4f4;
+      cursor: pointer;
+    }
+    .time-adjust-button svg { width: 15px; height: 15px; stroke-width: 2.2; pointer-events: none; }
+    .time-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     .trip-track { position: relative; height: 1px; background: #b5cbd0; }
     .trip-track::before, .trip-track::after {
       content: "";
@@ -397,7 +413,6 @@
     }
     .wind-arrow svg { width: 13px; height: 13px; stroke-width: 2.4; }
     .route-marker.label-left .marker-label { left: auto; right: 41px; text-align: right; }
-    .route-marker.compact .marker-label { display: none; }
     .route-marker.compact .marker-shell { width: 30px; height: 36px; }
     .route-marker.compact .marker-face {
       width: 28px;
@@ -475,9 +490,15 @@
     .route-option span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; font-weight: 600; }
     .route-option time { align-self: center; color: var(--ink); font: 700 12px/1 "DM Sans", sans-serif; }
 
-    .expanded .forecast-strip,
-    .expanded .summary-card { opacity: 0; pointer-events: none; transform: translateY(8px); }
+    .expanded .forecast-strip { opacity: 0; pointer-events: none; transform: translateY(8px); }
     .forecast-strip, .summary-card { transition: opacity .2s ease, transform .2s ease; }
+
+    @media (max-width: 520px) {
+      .forecast-strip { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; overflow: hidden; }
+      .day-button { min-width: 0; padding-inline: 2px; }
+      .day-label-full { display: none; }
+      .day-label-short { display: inline; }
+    }
 
     @media (min-width: 760px) {
       .app { --map-toolbar-top: 137px; }
@@ -536,7 +557,7 @@
         <div class="risk-pill" id="riskPill"></div>
       </div>
       <div class="trip-line">
-        <div class="trip-stop"><label class="time-label" for="departureTimeInput">출발 시간</label><input class="time-input" id="departureTimeInput" type="time" step="300" /><span id="departurePort"></span></div>
+        <div class="trip-stop"><span class="time-label">출발 시간</span><div class="departure-time-control"><output class="departure-time-value" id="departureTimeDisplay"></output><label class="time-adjust-button" title="출발 시간 조정"><i data-lucide="clock-3" aria-hidden="true"></i><input class="time-input" id="departureTimeInput" type="time" step="300" aria-label="출발 시간 조정" /></label></div><span id="departurePort"></span></div>
         <div class="trip-track"><i data-lucide="ship"></i></div>
         <div class="trip-stop"><span class="time-label">도착 시간</span><output class="arrival-time" id="arrivalTime"></output><span id="arrivalPort"></span></div>
       </div>
@@ -634,12 +655,14 @@
     }
 
     function renderDays() {
-      document.querySelector('#forecastStrip').innerHTML = days.map((day) => `
-        <button class="day-button" type="button" data-day="${day.index}" aria-selected="${day.index === state.dayIndex}">
-          <strong>${escapeHTML(day.label)}</strong>
-          <span>${escapeHTML(day.date)}</span>
-        </button>
-      `).join('');
+      document.querySelector('#forecastStrip').innerHTML = days.map((day) => {
+        const shortLabel = day.label.endsWith('요일') ? day.label.slice(0, -2) : day.label;
+        return `
+          <button class="day-button" type="button" data-day="${day.index}" aria-selected="${day.index === state.dayIndex}">
+            <strong><span class="day-label-full">${escapeHTML(day.label)}</span><span class="day-label-short">${escapeHTML(shortLabel)}</span></strong>
+            <span>${escapeHTML(day.date)}</span>
+          </button>`;
+      }).join('');
     }
 
     function renderRouteOptions() {
@@ -664,7 +687,7 @@
       const html = `
         <div class="marker-shell">
           <div class="marker-face" style="--marker-color:${risk.color}">${iconSVG(risk.icon, 19)}</div>
-          ${compact ? '' : label}
+          ${label}
         </div>`;
       return L.divIcon({
         className: `route-marker ${compact ? 'compact' : ''} ${labelLeft ? 'label-left' : ''}`,
@@ -739,6 +762,7 @@
       summaryAdvisory.hidden = day.state !== '위험';
       document.querySelector('#routeTitle').textContent = `${route.from} → ${route.to}`;
       document.querySelector('#vessel').textContent = `${route.vesselType} · ${route.vessel}`;
+      document.querySelector('#departureTimeDisplay').textContent = state.departureTimes[route.id];
       document.querySelector('#departureTimeInput').value = state.departureTimes[route.id];
       document.querySelector('#departurePort').textContent = route.from;
       document.querySelector('#arrivalTime').textContent = points.at(-1).time.replace('다음날 ', '+1 ');
